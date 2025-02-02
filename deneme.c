@@ -2,8 +2,7 @@
 // DEĞİŞKENLER DEALLOCATED EDİLİYOR AŞIRI ÖNEMLİ DİKKAT ET HEAPTE YER AÇIP (MALLOC İLE) ONU DÖNDÜRÜRSEK
 // SORUN KALMAZ
 
-
-// void* değerini bir değişkene atayamadığımız için int* yaptıktan sonra değişken dönüşümü uyguluyoruz.!!!!!!!! 
+// void* değerini bir değişkene atayamadığımız için int* yaptıktan sonra değişken dönüşümü uyguluyoruz.!!!!!!!!
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -11,67 +10,146 @@
 #include <wait.h>
 #include <nl_types.h>
 #include <time.h>
-pthread_mutex_t mutex;
-pthread_mutex_t mutex2;
+pthread_mutex_t mutexFuel;
+pthread_cond_t condFuel;
+// trylock fazla thread az erişilmesi gereken yer olunca işe yarıyor. örnek 4 arabaya 10 sürücü binecek
+// 6 kişinin sürekli beklemesi gerekiyor bunun gibi durumlar
 
-void *routine(void *arg){
-    if(pthread_mutex_trylock(&mutex) == 0){ //eğer geri dönüş değeri 0 sa kitleyebiliyor farklı bir şeyse kitleyemiyor
-        printf("LOCK\n");
+//12. videoya tekrardan bak anlamadım
+
+pthread_mutex_t stoveMutex[4];
+int stoveFuel[4] = {100, 100, 100, 100};
+int fuelSub;
+void *fuelGas()
+{
+
+    for (int i = 0; i < 4; i++)
+    {
+        if (pthread_mutex_trylock(&stoveMutex[i]) == 0)
+        {
+            fuelSub = (rand() % 20);
+            
+                if(stoveFuel[i] - fuelSub < 0){
+                    stoveFuel[i] = 0;
+                 }
+                else{
+                    stoveFuel[i] -= fuelSub;
+                    usleep(500000);
+                    printf("[%d]. stoves gas percant..%d\n",i ,stoveFuel[i]);
+                }
+                pthread_mutex_unlock(&stoveMutex[i]);
+                break;     
+        }
+        else
+        {
+            if (i == 3)
+            {
+                usleep(300000);
+                i = 0;
+            }
+        }
+        
+        
+    }
+}
+
+int main()
+{
+    srand(time(NULL));
+    pthread_t th[10];
+    int i;
+    for (i = 0; i < 4; i++){
+    pthread_mutex_init(&stoveMutex[i], NULL);
+    }
+    for (i = 0; i < 10; i++)
+    {
+
+            if (pthread_create(&th[i], NULL, &fuelGas, NULL) != 0)
+            { // &r ile geri dönüş değerini alıyoruz
+
+                return 1;
+            }
+        }
+
+        for (i = 0; i < 10; i++)
+        {
+            int *r;
+            if (pthread_join(th[i], NULL) != 0)
+            { // &r ile geri dönüş değerini alıyoruz
+
+                return 2;
+            }
+        }
+        for(i = 0; i < 4;++i){
+        pthread_mutex_destroy(&stoveMutex[i]);  
+        }
+}
+
+
+
+
+
+
+/*
+int fuel = 0;
+
+void *fuelGas(){
+    while (fuel != 100){
+        pthread_mutex_lock(&mutexFuel);
+        fuel = fuel + 10;
+        printf("Gas is fuelling..%d\n",fuel);
+        pthread_mutex_unlock(&mutexFuel);
+        pthread_cond_broadcast(&condFuel); //tüm threadleri uyandırıyor hepsine sinyal yolluyor.
+        // pthread_cond_signal(&condFuel);
         sleep(1);
-        pthread_mutex_unlock(&mutex);
+
     }
-    else{
-        printf("didn't lock\n");
+}
+
+void *car(){
+    pthread_mutex_lock(&mutexFuel);
+
+    while(fuel < 60){
+        printf("No fuel. Waiting...\n");
+        pthread_cond_wait(&condFuel,&mutexFuel);
     }
+    fuel -= 40;
+    printf("Got fuel. Now LEFT...%d\n",fuel);
+    pthread_mutex_unlock(&mutexFuel);
 }
 
 
 int main(){
 
-    pthread_t th[2];
+    pthread_t th[5];
     int i;
-    pthread_mutex_init(&mutex,NULL);
-    for (i = 0; i < 2; i++){
+    pthread_cond_init(&condFuel,NULL);
+    pthread_mutex_init(&mutexFuel,NULL);
+    for (i = 0; i < 5; i++){
         int *a = malloc(sizeof(int));
         *a = i;
-        if(pthread_create(&th[i] , NULL, &routine, a) != 0) // a ile argüman gönderiyoruz arg = a oluyor gibi düşün
-            return 1;
-            sleep(2);
-        
+        if(i == 4){
+            if(pthread_create(&th[i] , NULL, &fuelGas, a) != 0) // a ile argüman gönderiyoruz arg = a oluyor gibi düşün
+                return 1;
+            }
+        else
+            if(pthread_create(&th[i] , NULL, &car, a) != 0) // a ile argüman gönderiyoruz arg = a oluyor gibi düşün
+                return 2;
     }
-    
-    for (i = 0; i < 2; i++){
+
+    for (i = 0; i < 5; i++){
         int* r;
         if(pthread_join(th[i], (void**) &r) != 0){// &r ile geri dönüş değerini alıyoruz
-        
-            return 2;
+
+            return 3;
         }
     }
-    pthread_mutex_destroy(&mutex);
-    
+    pthread_cond_destroy(&condFuel);
+    pthread_mutex_destroy(&mutexFuel);
+
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+*/
 
 /*
 int primes[10] = {2,3,5,7,11,13,17,19,23,29};
@@ -80,7 +158,7 @@ void *sumprime(void *arg){
 
     int * toplam = malloc(sizeof(int));
     int i,ilkyari = 0,sonyari = 0;
-    
+
     if(*(int*)arg == 0){
         *(int*)arg = primes[0];
         for(i = 0;i < ((sizeof(primes)/sizeof(int))/2); i++){
@@ -101,19 +179,19 @@ int main(){
 
     pthread_t th[2];
     int i;
-    
+
     for (i = 0; i < 2; i++){
         int *a = malloc(sizeof(int));
         *a = i;
         if(pthread_create(&th[i] , NULL, &sumprime, a) != 0)
             return 1;
-        
+
     }
     int globalsum = 0;
     for (i = 0; i < 2; i++){
         int* r;
         if(pthread_join(th[i], (void**) &r) != 0){// &r ile geri dönüş değerini alıyoruz
-        
+
             return 2;
         }
 
@@ -121,7 +199,7 @@ int main(){
           free(r);
     }
     printf("%d",globalsum);
-    
+
 }
 
 
@@ -144,13 +222,13 @@ int main(){
 
     pthread_t th[10];
     int i;
-    
+
     for (i = 0; i < 10; i++){
         int *a = malloc(sizeof(int));
         *a = i;
         if(pthread_create(&th[i] , NULL, &find, a "parametre olarak gönderiyoruz") != 0)
             return 1;
-        
+
     }
     for (i = 0; i < 10; i++){
         if(pthread_join(th[i], NULL) != 0)
@@ -158,7 +236,6 @@ int main(){
     }
 }
 */
-
 
 /*
 void *routine()
@@ -168,7 +245,7 @@ void *routine()
     *result = value; //burada adresini alsa zaten bu adres temizleneceği için undefined behavior oluyor.
     printf("result = %p\n",result);
     return (void*)result;
-    
+
 }
 
 int main()
@@ -191,7 +268,6 @@ int main()
 
 
 */
-
 
 /*
 
