@@ -1,0 +1,1 @@
+ printf("my turn %d %d  \n", i, *iptr);
