@@ -15,41 +15,59 @@ pthread_cond_t condFuel;
 // trylock fazla thread az erişilmesi gereken yer olunca işe yarıyor. örnek 4 arabaya 10 sürücü binecek
 // 6 kişinin sürekli beklemesi gerekiyor bunun gibi durumlar
 
-//12. videoya tekrardan bak anlamadım
+// 12. videoya tekrardan bak anlamadım
 
 pthread_mutex_t stoveMutex[4];
 int stoveFuel[4] = {100, 100, 100, 100};
-int fuelSub;
-void *fuelGas()
-{
 
+int check()
+{
     for (int i = 0; i < 4; i++)
     {
-        if (pthread_mutex_trylock(&stoveMutex[i]) == 0)
+        if (stoveFuel[i] > 0)
         {
-            fuelSub = (rand() % 20);
-            
-                if(stoveFuel[i] - fuelSub < 0){
-                    stoveFuel[i] = 0;
-                 }
-                else{
-                    stoveFuel[i] -= fuelSub;
-                    usleep(500000);
-                    printf("[%d]. stoves gas percant..%d\n",i ,stoveFuel[i]);
+            return 0;
+        }
+    }
+    return 15;
+}
+
+void *routine(void *args)
+{
+    while (!check())
+    {
+        for (int i = 0; i < 4; i++)
+        {
+            if (pthread_mutex_trylock(&stoveMutex[i]) == 0)
+            {
+                if (stoveFuel[i] > 0)
+                {
+                    int fuelNeeded = (rand() % 30);
+
+                    if (stoveFuel[i] - fuelNeeded < 0)
+                    {
+                        printf("fuel is empty\n");
+                        stoveFuel[i] = 0;
+                    }
+                    else
+                    {
+                        printf("stove...%d\n", stoveFuel[i]);
+                        usleep(500000);
+                        stoveFuel[i] -= fuelNeeded;
+                    }
                 }
                 pthread_mutex_unlock(&stoveMutex[i]);
-                break;     
-        }
-        else
-        {
-            if (i == 3)
+                break;
+            }
+            else
             {
-                usleep(300000);
-                i = 0;
+                if (i == 3)
+                {
+                    usleep(300000);
+                    i = 0;
+                }
             }
         }
-        
-        
     }
 }
 
@@ -57,38 +75,30 @@ int main()
 {
     srand(time(NULL));
     pthread_t th[10];
-    int i;
-    for (i = 0; i < 4; i++){
-    pthread_mutex_init(&stoveMutex[i], NULL);
-    }
-    for (i = 0; i < 10; i++)
+    for (int i = 0; i < 4; i++)
     {
-
-            if (pthread_create(&th[i], NULL, &fuelGas, NULL) != 0)
-            { // &r ile geri dönüş değerini alıyoruz
-
-                return 1;
-            }
-        }
-
-        for (i = 0; i < 10; i++)
+        pthread_mutex_init(&stoveMutex[i], NULL);
+    }
+    for (int i = 0; i < 10; i++)
+    {
+        if (pthread_create(&th[i], NULL, &routine, NULL) == 0)
         {
-            int *r;
-            if (pthread_join(th[i], NULL) != 0)
-            { // &r ile geri dönüş değerini alıyoruz
+            printf("failed to create\n");
+        }
+    }
+    for (int i = 0; i < 10; i++)
+    {
+        if (pthread_join(th[i], NULL) == 0)
+        {
+            printf("failed to join\n");
+        }
+    }
 
-                return 2;
-            }
-        }
-        for(i = 0; i < 4;++i){
-        pthread_mutex_destroy(&stoveMutex[i]);  
-        }
+    for (int i = 0; i < 4; i++)
+    {
+        pthread_mutex_destroy(&stoveMutex[i]);
+    }
 }
-
-
-
-
-
 
 /*
 int fuel = 0;
