@@ -3,6 +3,7 @@
 // SORUN KALMAZ
 
 // void* değerini bir değişkene atayamadığımız için int* yaptıktan sonra değişken dönüşümü uyguluyoruz.!!!!!!!!
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -10,13 +11,97 @@
 #include <wait.h>
 #include <nl_types.h>
 #include <time.h>
-pthread_mutex_t mutexFuel;
-pthread_cond_t condFuel;
+
+pthread_barrier_t barrier;
+
+void *routine()
+{
+
+    printf("bariyeri bekliyorum\n");
+    pthread_barrier_wait(&barrier);
+    printf("bariyer asildi");
+}
+
+int main()
+{
+
+    pthread_t th[2];
+    pthread_barrier_init(&barrier, NULL,3); //bariyer 3 thread olana kadar başlamıyor bekliyor
+    for (int i = 0; i < 3; ++i)
+    {
+       
+        if (pthread_create(&th[i], NULL, &routine, NULL) != 0)
+        {
+            printf("non create");
+        }
+    }
+
+    for (int i = 0; i < 3; ++i)
+    {
+
+        if (pthread_join(th[i], NULL) != 0)
+        {
+            printf("non join");
+        }
+    }
+    
+    pthread_barrier_destroy(&barrier);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// pthread_exit main fonksiyonda kullanılınca main threadi kapatsa bile diğer threadleri ayakta tutuyor threadler bitene
+// kadar çalışmalarına izin veriyor.
+/*
+
+void* randomsayi(){
+    int * toplam = malloc(sizeof(int)); //void * ı herhangi birine ata ama voide herhangi bir şey atayamazsın
+    *toplam = (rand() % 5) + 1;
+    sleep(1);
+    printf("toplam..%d\n",*toplam);
+    pthread_exit((void *)toplam);
+}
+
+
+int main(){
+
+    srand(time(NULL));
+    pthread_t th;
+    void *feedback;
+
+    if(pthread_create(&th, NULL, &randomsayi, NULL) !=0){
+        printf("olmadi");
+    }
+
+    pthread_exit(0);// burada return 0; yazınca tüm her şey killendiği için herhangi bir çıkış alamıyoruz fakat
+                    //pthread_exit(0); sadece main threadi killiyor diğerleri ayakta kalıyor.
+
+    pthread_join(th, &feedback);
+
+
+
+
+}
+
+
+*/
+
 // trylock fazla thread az erişilmesi gereken yer olunca işe yarıyor. örnek 4 arabaya 10 sürücü binecek
 // 6 kişinin sürekli beklemesi gerekiyor bunun gibi durumlar
 
-// 12. videoya tekrardan bak anlamadım
-
+/*
 pthread_mutex_t stoveMutex[4];
 int stoveFuel[4] = {100, 100, 100, 100};
 
@@ -99,7 +184,7 @@ int main()
         pthread_mutex_destroy(&stoveMutex[i]);
     }
 }
-
+*/
 /*
 int fuel = 0;
 
