@@ -1,8 +1,14 @@
+// 16. video baya baya güzel bilgi veriyor pthread_t ile gettid arasındaki farkı anlatıyor operating system--pthread api farkı
+
 // FONKSİYONLARDAN GERİ DÖNÜŞ DEĞERİ OLARAK ADRES ALIRSAK HATA ALIRIZ ÇÜNKÜ FONKSİYON BİTİNCE
 // DEĞİŞKENLER DEALLOCATED EDİLİYOR AŞIRI ÖNEMLİ DİKKAT ET HEAPTE YER AÇIP (MALLOC İLE) ONU DÖNDÜRÜRSEK
 // SORUN KALMAZ
 
 // void* değerini bir değişkene atayamadığımız için int* yaptıktan sonra değişken dönüşümü uyguluyoruz.!!!!!!!!
+
+// BARİYER KISMINA BAŞKA VİDEOLARDAN BAK 15. VİDEOYU TEKRAR İZLE
+
+//aynı threadle unlocklanmayan mutex undefined behavior oluşturur.
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,9 +17,121 @@
 #include <wait.h>
 #include <nl_types.h>
 #include <time.h>
+#include <semaphore.h>
 
-pthread_barrier_t barrier;
 
+#define THREAD_NUM 1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// 23. video
+/*
+//BINARY SEMAPHORE
+#define THREAD_NUM 1
+
+sem_t semFuel;
+pthread_mutex_t mutexFuel;
+
+int *fuel;
+
+void* routine(void* args) {
+    *fuel += 50;
+    printf("Current value is %d\n", *fuel);
+    sem_post(&semFuel);
+}
+
+int main(int argc, char *argv[]) {
+    pthread_t th[THREAD_NUM];
+    fuel = malloc(sizeof(int));
+    *fuel = 50;
+    pthread_mutex_init(&mutexFuel, NULL);
+    sem_init(&semFuel, 0, 0);
+    int i;
+    for (i = 0; i < THREAD_NUM; i++) {
+        if (pthread_create(&th[i], NULL, &routine, NULL) != 0) {
+            perror("Failed to create thread");
+        }
+    }
+    sem_wait(&semFuel); //binary semaphore yapısında main dışındaki thread tamamlanana kadar burada beklemesini sağlıyor
+                        //sem_post değeri 1 yaptığında(0 olarak initialize ediliyor) wait kalkıyor ve main fuel freeleniyor
+    printf("Deallocating fuel\n");
+    free(fuel);
+
+    for (i = 0; i < THREAD_NUM; i++) {
+        if (pthread_join(th[i], NULL) != 0) {
+            perror("Failed to join thread");
+        }
+    }
+    pthread_mutex_destroy(&mutexFuel);
+    sem_destroy(&semFuel);
+    return 0;
+}
+
+
+
+*/
+
+/*
+
+
+
+#define THREAD_NUM 4
+
+sem_t semaphore;
+
+void* routine(void* args) {
+    while(1){
+        sem_wait(&semaphore);
+        printf("Hello from thread %d\n", *(int*)args);
+        usleep(700000);
+        sem_post(&semaphore);
+
+    }
+    free(args);
+}
+
+int main(int argc, char *argv[]) {
+    pthread_t th[THREAD_NUM];
+    sem_init(&semaphore, 0, 4);
+    int i;
+    for (i = 0; i < THREAD_NUM; i++) {
+        int* a = malloc(sizeof(int));
+        *a = i;
+        if (pthread_create(&th[i], NULL, &routine, a) != 0) {
+            perror("Failed to create thread");
+        }
+    }
+
+    for (i = 0; i < THREAD_NUM; i++) {
+        if (pthread_join(th[i], NULL) != 0) {
+            perror("Failed to join thread");
+        }
+    }
+    sem_destroy(&semaphore);
+    return 0;
+}
+
+
+*/
+
+/*
 void *routine()
 {
 
@@ -29,7 +147,7 @@ int main()
     pthread_barrier_init(&barrier, NULL,3); //bariyer 3 thread olana kadar başlamıyor bekliyor
     for (int i = 0; i < 3; ++i)
     {
-       
+
         if (pthread_create(&th[i], NULL, &routine, NULL) != 0)
         {
             printf("non create");
@@ -44,23 +162,11 @@ int main()
             printf("non join");
         }
     }
-    
+
     pthread_barrier_destroy(&barrier);
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+*/
 
 // pthread_exit main fonksiyonda kullanılınca main threadi kapatsa bile diğer threadleri ayakta tutuyor threadler bitene
 // kadar çalışmalarına izin veriyor.
@@ -166,14 +272,14 @@ int main()
     }
     for (int i = 0; i < 10; i++)
     {
-        if (pthread_create(&th[i], NULL, &routine, NULL) == 0)
+        if (pthread_create(&th[i], NULL, &routine, NULL) != 0)
         {
             printf("failed to create\n");
         }
     }
     for (int i = 0; i < 10; i++)
     {
-        if (pthread_join(th[i], NULL) == 0)
+        if (pthread_join(th[i], NULL) != 0)
         {
             printf("failed to join\n");
         }
