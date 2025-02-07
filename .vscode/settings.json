@@ -2,6 +2,8 @@
     "files.associations": {
         "unistd.h": "c",
         "stdio.h": "c",
-        "stdlib.h": "c"
+        "stdlib.h": "c",
+        "chrono": "c",
+        "algorithm": "c"
     }
 }
