@@ -19,7 +19,7 @@ void *ogrenci(void *arg) {
     free(arg);
 
     while (1) {
-        usleep(200000);
+        usleep(500000);
         usleep(rand() % 700000);
         pthread_mutex_lock(&pizzaMutex);
 
@@ -48,9 +48,9 @@ void *pizza_getiren(void *arg) {
         pthread_mutex_lock(&pizzaMutex);
 
         if (pizza_dilim == 0) {
-            printf("Pizza geliyor...\n");
+            printf("pizza geliyor\n");
             pizza_dilim = DILIM_SAYISI;  
-            printf("Pizza geldi! Dilimler: %d\n", pizza_dilim);
+            printf("dilimler: %d\n", pizza_dilim);
             pthread_cond_broadcast(&pizzaCond);
         }
 
